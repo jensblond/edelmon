@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f172a">
+  <title>Edelmon – Gold &amp; Silver Tracker</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-hover: #334155;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --gold: #fbbf24;
+      --gold-bg: rgba(251, 191, 36, 0.1);
+      --silver: #cbd5e1;
+      --silver-bg: rgba(203, 213, 225, 0.1);
+      --green: #34d399;
+      --red: #f87171;
+      --radius: 16px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      width: 100%;
+      max-width: 480px;
+      padding: 24px 0 8px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    header h1 span { opacity: 0.4; font-weight: 400; }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .status-dot.error { background: var(--red); animation: none; }
+    .status-dot.loading { background: var(--gold); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    main {
+      width: 100%;
+      max-width: 480px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px 0;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: background 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+
+    .card.gold::before { background: linear-gradient(90deg, var(--gold), #f59e0b); }
+    .card.silver::before { background: linear-gradient(90deg, var(--silver), #94a3b8); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .metal-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .metal-icon {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .gold .metal-icon { background: var(--gold-bg); }
+    .silver .metal-icon { background: var(--silver-bg); }
+
+    .metal-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .metal-symbol {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      opacity: 0.6;
+    }
+
+    .change-badge {
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .change-badge.up { background: rgba(52, 211, 153, 0.15); color: var(--green); }
+    .change-badge.down { background: rgba(248, 113, 113, 0.15); color: var(--red); }
+    .change-badge.flat { background: var(--surface-hover); color: var(--text-muted); }
+
+    .price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .price-currency {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      align-self: flex-start;
+      margin-top: 4px;
+    }
+
+    .price-value {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .gold .price-value { color: var(--gold); }
+    .silver .price-value { color: var(--silver); }
+
+    .price-unit {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-left: 2px;
+    }
+
+    .price-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .detail-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .detail-value {
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ratio-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .ratio-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .ratio-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface) 25%, var(--surface-hover) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+      color: transparent !important;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .refresh-btn {
+      position: fixed;
+      bottom: max(20px, env(safe-area-inset-bottom, 20px));
+      right: 20px;
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      border: none;
+      background: var(--surface-hover);
+      color: var(--text);
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.3s, background 0.2s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+
+    .refresh-btn:active { transform: scale(0.9); }
+    .refresh-btn.spinning svg { animation: spin 0.8s linear infinite; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .refresh-btn svg {
+      width: 20px; height: 20px;
+      transition: transform 0.3s;
+    }
+
+    footer {
+      width: 100%;
+      max-width: 480px;
+      padding: 12px 0 max(16px, env(safe-area-inset-bottom, 16px));
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      opacity: 0.5;
+    }
+
+    .error-banner {
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.2);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      color: var(--red);
+      text-align: center;
+      display: none;
+    }
+
+    .error-banner.visible { display: block; }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f8fafc;
+        --surface: #ffffff;
+        --surface-hover: #f1f5f9;
+        --text: #0f172a;
+        --text-muted: #64748b;
+        --gold: #b45309;
+        --gold-bg: rgba(180, 83, 9, 0.08);
+        --silver: #475569;
+        --silver-bg: rgba(71, 85, 105, 0.08);
+      }
+
+      .card { box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+      .ratio-card { box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+      .refresh-btn { box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Edelmon <span>· precious metals</span></h1>
+    <div class="status-bar">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Connecting…</span>
+    </div>
+  </header>
+
+  <main>
+    <div id="errorBanner" class="error-banner"></div>
+
+    <div class="card gold" id="goldCard">
+      <div class="card-header">
+        <div class="metal-label">
+          <div class="metal-icon">🥇</div>
+          <div>
+            <div class="metal-name">Gold</div>
+            <div class="metal-symbol">XAU / USD</div>
+          </div>
+        </div>
+        <div class="change-badge flat" id="goldChange">—</div>
+      </div>
+      <div class="price-row">
+        <span class="price-currency">$</span>
+        <span class="price-value" id="goldPrice"><span class="skeleton">0,000.00</span></span>
+        <span class="price-unit">/oz</span>
+      </div>
+      <div class="price-details">
+        <div class="detail-item">
+          <span class="detail-label">EUR / oz</span>
+          <span class="detail-value" id="goldEur">—</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">EUR / gram</span>
+          <span class="detail-value" id="goldEurGram">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card silver" id="silverCard">
+      <div class="card-header">
+        <div class="metal-label">
+          <div class="metal-icon">🥈</div>
+          <div>
+            <div class="metal-name">Silver</div>
+            <div class="metal-symbol">XAG / USD</div>
+          </div>
+        </div>
+        <div class="change-badge flat" id="silverChange">—</div>
+      </div>
+      <div class="price-row">
+        <span class="price-currency">$</span>
+        <span class="price-value" id="silverPrice"><span class="skeleton">00.00</span></span>
+        <span class="price-unit">/oz</span>
+      </div>
+      <div class="price-details">
+        <div class="detail-item">
+          <span class="detail-label">EUR / oz</span>
+          <span class="detail-value" id="silverEur">—</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">EUR / gram</span>
+          <span class="detail-value" id="silverEurGram">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="ratio-card">
+      <span class="ratio-label">Gold / Silver Ratio</span>
+      <span class="ratio-value" id="ratioValue">—</span>
+    </div>
+  </main>
+
+  <button class="refresh-btn" id="refreshBtn" aria-label="Refresh prices">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="23 4 23 10 17 10"/>
+      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+    </svg>
+  </button>
+
+  <footer>
+    Auto-refreshes every 60s
+  </footer>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const TROY_OZ_TO_GRAM = 31.1035;
+
+    let prevGold = null;
+    let prevSilver = null;
+    let refreshTimer = null;
+    let eurRate = null;
+
+    // --- API Layer ---
+
+    async function fetchEurRate() {
+      try {
+        const r = await fetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR');
+        const data = await r.json();
+        eurRate = data.rates?.EUR ?? null;
+      } catch {
+        eurRate = null;
+      }
+    }
+
+    async function fetchPrices() {
+      const sources = [
+        // Primary: gold-api.com (free, no key, CORS ✓)
+        async () => {
+          const [gRes, sRes] = await Promise.all([
+            fetch('https://api.gold-api.com/price/XAU'),
+            fetch('https://api.gold-api.com/price/XAG')
+          ]);
+          if (!gRes.ok || !sRes.ok) throw new Error('HTTP error');
+          const [gData, sData] = await Promise.all([gRes.json(), sRes.json()]);
+          if (!gData.price || !sData.price) throw new Error('Missing data');
+          return { gold: gData.price, silver: sData.price, source: 'gold-api.com' };
+        },
+        // Fallback: goldprice.org (no key)
+        async () => {
+          const r = await fetch('https://data-asg.goldprice.org/dbXRates/USD');
+          if (!r.ok) throw new Error(r.status);
+          const data = await r.json();
+          const gold = data.items?.[0]?.xauPrice;
+          const silver = data.items?.[0]?.xagPrice;
+          if (!gold || !silver) throw new Error('Missing data');
+          return { gold, silver, source: 'goldprice.org' };
+        },
+        // Fallback: metals.dev (needs API key from ?key= param)
+        async () => {
+          const key = new URLSearchParams(location.search).get('metals_key');
+          if (!key) throw new Error('No key');
+          const r = await fetch(`https://api.metals.dev/v1/latest?api_key=${key}&currency=USD`);
+          if (!r.ok) throw new Error(r.status);
+          const data = await r.json();
+          if (!data.metals) throw new Error('Missing data');
+          return { gold: data.metals.gold, silver: data.metals.silver, source: 'metals.dev' };
+        }
+      ];
+
+      for (const src of sources) {
+        try { return await src(); } catch {}
+      }
+      throw new Error('All price sources failed');
+    }
+
+    // --- UI Updates ---
+
+    function formatPrice(val, decimals = 2) {
+      return Number(val).toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function updateChange(elId, current, previous) {
+      const el = $(elId);
+      if (!previous || !current) {
+        el.className = 'change-badge flat';
+        el.textContent = '—';
+        return;
+      }
+      const pct = ((current - previous) / previous) * 100;
+      if (Math.abs(pct) < 0.005) {
+        el.className = 'change-badge flat';
+        el.textContent = '0.00%';
+      } else if (pct > 0) {
+        el.className = 'change-badge up';
+        el.textContent = `▲ ${pct.toFixed(2)}%`;
+      } else {
+        el.className = 'change-badge down';
+        el.textContent = `▼ ${Math.abs(pct).toFixed(2)}%`;
+      }
+    }
+
+    function setStatus(state, text) {
+      const dot = $('statusDot');
+      dot.className = 'status-dot' + (state === 'error' ? ' error' : state === 'loading' ? ' loading' : '');
+      $('statusText').textContent = text;
+    }
+
+    function showError(msg) {
+      const el = $('errorBanner');
+      el.textContent = msg;
+      el.classList.add('visible');
+    }
+
+    function hideError() {
+      $('errorBanner').classList.remove('visible');
+    }
+
+    // --- Main Refresh ---
+
+    async function refresh() {
+      const btn = $('refreshBtn');
+      btn.classList.add('spinning');
+      setStatus('loading', 'Updating…');
+
+      try {
+        const [prices] = await Promise.all([
+          fetchPrices(),
+          eurRate === null ? fetchEurRate() : Promise.resolve()
+        ]);
+
+        hideError();
+
+        // Gold
+        $('goldPrice').textContent = formatPrice(prices.gold);
+        updateChange('goldChange', prices.gold, prevGold);
+
+        if (eurRate) {
+          const goldEur = prices.gold * eurRate;
+          $('goldEur').textContent = '€' + formatPrice(goldEur);
+          $('goldEurGram').textContent = '€' + formatPrice(goldEur / TROY_OZ_TO_GRAM);
+        }
+
+        // Silver
+        $('silverPrice').textContent = formatPrice(prices.silver);
+        updateChange('silverChange', prices.silver, prevSilver);
+
+        if (eurRate) {
+          const silverEur = prices.silver * eurRate;
+          $('silverEur').textContent = '€' + formatPrice(silverEur);
+          $('silverEurGram').textContent = '€' + formatPrice(silverEur / TROY_OZ_TO_GRAM);
+        }
+
+        // Ratio
+        if (prices.gold && prices.silver) {
+          $('ratioValue').textContent = (prices.gold / prices.silver).toFixed(1) + '×';
+        }
+
+        prevGold = prices.gold;
+        prevSilver = prices.silver;
+
+        const now = new Date();
+        setStatus('ok', `Updated ${now.toLocaleTimeString()} · ${prices.source}`);
+
+      } catch (err) {
+        setStatus('error', 'Update failed');
+        showError('Could not fetch prices. Will retry in 60s.');
+        console.error('Price fetch error:', err);
+      } finally {
+        btn.classList.remove('spinning');
+      }
+    }
+
+    // --- Init ---
+
+    function startAutoRefresh() {
+      if (refreshTimer) clearInterval(refreshTimer);
+      refreshTimer = setInterval(refresh, 60_000);
+    }
+
+    $('refreshBtn').addEventListener('click', () => {
+      refresh();
+      startAutoRefresh(); // reset timer on manual refresh
+    });
+
+    // Refresh when tab becomes visible again
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        refresh();
+        startAutoRefresh();
+      }
+    });
+
+    // Boot
+    refresh();
+    startAutoRefresh();
+  </script>
+</body>
+</html>
